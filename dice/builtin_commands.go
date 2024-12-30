@@ -2152,6 +2152,53 @@ func (d *Dice) registerCoreCommands() {
 		},
 	}
 	d.CmdMap["reply"] = cmdReply
+
+	cmdCore := &CmdItemInfo{
+		Name:      "core",
+		ShortHelp: ".core on/off/status",
+		Help:      "查看当前状态 .core status\n打开或关闭核心模式:\n.core on/off,",
+		Solve: func(ctx *MsgContext, msg *Message, cmdArgs *CmdArgs) CmdExecuteResult {
+
+			if ctx.MessageType != "group" {
+				ReplyToSender(ctx, msg, "私聊时不支持核心模式")
+				return CmdExecuteResult{Matched: true, Solved: true}
+			}
+
+			if !(msg.Platform == "QQ-CH" || ctx.Dice.Config.BotExtFreeSwitch || ctx.PrivilegeLevel >= 40) {
+				ReplyToSender(ctx, msg, DiceFormatTmpl(ctx, "核心:提示_无权限_非master/管理/邀请者"))
+				return CmdExecuteResult{Matched: true, Solved: true}
+			}
+
+			val := cmdArgs.GetArgN(1)
+			switch val {
+			case "on":
+				if ctx.Group.IsCoreMode == true {
+					ReplyToSender(ctx, msg, "当前群已经开启核心模式，请不要重复执行。")
+				} else {
+					ctx.Group.IsCoreMode = true
+					ReplyToSender(ctx, msg, "已在当前群开启核心模式(关➯开)。")
+				}
+			case "off":
+				if ctx.Group.IsCoreMode == false {
+					ReplyToSender(ctx, msg, "当前群已经关闭核心模式，请不要重复执行。")
+				} else {
+					ctx.Group.IsCoreMode = false
+					ReplyToSender(ctx, msg, "已在当前群关闭核心模式(开➯关)。")
+				}
+			case "status":
+				text := "关"
+				if ctx.Group.IsCoreMode {
+					text = "开"
+				}
+				ReplyToSender(ctx, msg, fmt.Sprintf("当前群核心模式状态：%s", text))
+			default:
+				return CmdExecuteResult{Matched: true, Solved: true, ShowHelp: true}
+			}
+			return CmdExecuteResult{Matched: true, Solved: true}
+		},
+	}
+	d.CmdMap["core"] = cmdCore
+
 }
 
 func getDefaultDicePoints(ctx *MsgContext) int64 {

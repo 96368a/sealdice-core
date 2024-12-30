@@ -120,6 +120,8 @@ type GroupInfo struct {
 	UpdatedAtTime int64 `yaml:"-" json:"-"`
 
 	DefaultHelpGroup string `yaml:"defaultHelpGroup" json:"defaultHelpGroup"` // 当前群默认的帮助文档分组
+
+	IsCoreMode bool `yaml:"isCoreMode" json:"isCoreMode"`
 }
 
 // ExtActive 开启扩展
@@ -787,6 +789,22 @@ func (s *IMSession) Execute(ep *EndPointInfo, msg *Message, runInSync bool) {
 						msg.Sender.UserID,
 					)
 				}
+				return
+			}
+		}
+
+		// 如果bot启用&&消息为指令，开始检测核心模式
+		if mctx.IsCurGroupBotOn && mctx.CommandID != 0 && mctx.Group.IsCoreMode {
+			allowCommands := []string{".r", ".ra", ".rc", ".ti", ".li", ".log", ".bot", ".core"}
+			isAllow := false
+			for _, prefix := range allowCommands {
+				if strings.HasPrefix(msg.Message, prefix) {
+					isAllow = true
+					break
+				}
+			}
+			if !isAllow {
+				log.Infof("群(%s)内<%s>(%s)的指令已被核心模式忽略: %s", msg.GroupID, msg.Sender.Nickname, msg.Sender.UserID, msg.Message)
 				return
 			}
 		}
